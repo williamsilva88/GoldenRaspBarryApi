@@ -1,6 +1,8 @@
 package com.api.goldenraspbarry.domain;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 
@@ -8,15 +10,12 @@ import javax.persistence.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class User {
+public class Producer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="id_producer")
     private Integer id;
     private String name;
-
-    @Column(unique = true)
-    private String email;
-    private String password;
 
 }
