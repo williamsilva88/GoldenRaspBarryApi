@@ -26,7 +26,11 @@ public class LocalConfig {
 
     @Bean
     public void startDB(){
-        indicatedService.getCSVDataIndicated();
+        String path = this.getClass().getResource("../../../../").getPath();
+        String system = this.getClass().getResource("").getPath().contains("\\")?"\\":"/";
+        String archive = "dataCSV"+system+"movielist.csv";
+        String fullPath = path + archive;
+        indicatedService.getCSVDataIndicated(fullPath);
     }
 
 

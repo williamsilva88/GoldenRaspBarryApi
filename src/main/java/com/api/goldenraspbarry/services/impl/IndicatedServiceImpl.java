@@ -36,21 +36,25 @@ public class IndicatedServiceImpl implements IndicatedService {
         return indicatedOptional.orElseThrow(() ->new ObjectNotFoundException("Objeto não encontrado"));
     }
 
-    public void getCSVDataIndicated() {
-        String path = this.getClass().getResource("../../../../../").getPath();
-        String system = this.getClass().getResource("").getPath().contains("\\")?"\\":"/";
-        String archive = "dataCSV"+system+"movielist.csv";
-        String fullPath = path + archive;
+    public void getCSVDataIndicated(String fullPath) {
+        getCSVDataIndicated(fullPath, null);
+    }
+
+    public void getCSVDataIndicated(BufferedReader br) {
+        getCSVDataIndicated(null, br);
+    }
+
+    public void getCSVDataIndicated(String fullPath, BufferedReader br) {
         String separetor = ";";
         int ignoreFisrtLines = 1;
 
-        BufferedReader br = null;
         String linha = "";
         List<Indicated> registerList = new ArrayList<>();
         ArrayList<String> producers = new ArrayList<>();
         try {
-
-            br = new BufferedReader(new FileReader(fullPath));
+            if(br == null) {
+                br = new BufferedReader(new FileReader(fullPath));
+            }
             int lines = 0;
             while ((linha = br.readLine()) != null) {
                 lines++;
@@ -77,7 +81,7 @@ public class IndicatedServiceImpl implements IndicatedService {
                 }
             }
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
