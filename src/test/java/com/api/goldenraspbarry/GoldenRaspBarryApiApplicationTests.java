@@ -60,7 +60,12 @@ class GoldenRaspBarryApiApplicationTests {
 		InputStream ips = getClass().getResourceAsStream("/dataCSV/movielist.csv");
 		BufferedReader br = new BufferedReader(new InputStreamReader(ips));
 		List<Indicated> indecated = indicatedServiceImpl.getCSVDataIndicated(br);
-		Assertions.assertEquals(1, 1);
+		Assertions.assertEquals(207, indecated.size());
+		Assertions.assertEquals(1980, indecated.get(0).getYear());
+		Assertions.assertEquals("Can't Stop the Music", indecated.get(0).getTitle());
+		Assertions.assertEquals("Associated Film Distribution", indecated.get(0).getStudios());
+		Assertions.assertEquals("Allan Carr", indecated.get(0).getProducers());
+		Assertions.assertEquals(true, indecated.get(0).getWinner());
 	}
 
 	@Test
