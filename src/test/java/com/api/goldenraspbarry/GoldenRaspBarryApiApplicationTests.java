@@ -54,7 +54,6 @@ class GoldenRaspBarryApiApplicationTests {
 	}
 
 	@Test
-	@Transactional
 	void whenGetCSVDataIndicated(){
 		Mockito.when(producerRepository.findById(Mockito.anyInt())).thenReturn(producer);
 		InputStream ips = getClass().getResourceAsStream("/dataCSV/movielist.csv");

@@ -11,6 +11,7 @@ import com.api.goldenraspbarry.services.exceptions.ObjectNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -41,6 +42,7 @@ public class IndicatedServiceImpl implements IndicatedService {
         return getCSVDataIndicated(null, br);
     }
 
+    @Transactional
     public List<Indicated> getCSVDataIndicated(String fullPath, BufferedReader br) {
         String separetor = ";";
         int ignoreFisrtLines = 1;
