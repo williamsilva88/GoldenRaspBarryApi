@@ -15,11 +15,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 public class IndicatedServiceImpl implements IndicatedService {
@@ -36,15 +32,16 @@ public class IndicatedServiceImpl implements IndicatedService {
         return indicatedOptional.orElseThrow(() ->new ObjectNotFoundException("Objeto não encontrado"));
     }
 
-    public void getCSVDataIndicated(String fullPath) {
-        getCSVDataIndicated(fullPath, null);
+    @Override
+    public List<Indicated> getCSVDataIndicated(String fullPath) {
+        return getCSVDataIndicated(fullPath, null);
     }
 
-    public void getCSVDataIndicated(BufferedReader br) {
-        getCSVDataIndicated(null, br);
+    public List<Indicated> getCSVDataIndicated(BufferedReader br) {
+        return getCSVDataIndicated(null, br);
     }
 
-    public void getCSVDataIndicated(String fullPath, BufferedReader br) {
+    public List<Indicated> getCSVDataIndicated(String fullPath, BufferedReader br) {
         String separetor = ";";
         int ignoreFisrtLines = 1;
 
@@ -95,6 +92,9 @@ public class IndicatedServiceImpl implements IndicatedService {
         }
         if(producers.size() > 0){
             ArrayList<Producer> producersListFinal = new ArrayList<>();
+            for (int i = 0; i < producers.size(); i++) {
+                producersListFinal.add(new Producer(i, producers.get(i)));
+            }
             producers.forEach(name->{
                 producersListFinal.add(new Producer(null, name));
             });
@@ -103,6 +103,8 @@ public class IndicatedServiceImpl implements IndicatedService {
         if(registerList.size() > 0) {
             indicatedRepository.saveAll(registerList);
         }
+
+        return registerList;
     }
 
     private ArrayList<Integer> generateProducers(ArrayList<String> producer, String data){
@@ -158,121 +160,86 @@ public class IndicatedServiceImpl implements IndicatedService {
 
     @Override
     public AwardsBreakDTO findAwardsBreak() {
-        List<Indicated> indicated = getIndicatorWin();
-
-        List<AwardedDTO> awardedDTOListTemp = new ArrayList<>();
-        List<AwardedDTO> awardedDTOListMaxes = new ArrayList<>();
-        List<AwardedDTO> awardedDTOListMin = new ArrayList<>();
-
-        indicated.forEach(ind->{
-            ind.getProducer().forEach(prod->{
-                AwardedDTO retOld = filterAwarded(awardedDTOListTemp, prod.getName());
-
-                if(retOld == null){
-                    awardedDTOListTemp.add(new AwardedDTO(prod.getName(), 0, ind.getYear(), 0));
-                    awardedDTOListMaxes.add(new AwardedDTO(prod.getName(), 0, ind.getYear(), 0));
-                    awardedDTOListMin.add(new AwardedDTO(prod.getName(), 999999999, ind.getYear(), 0));
-                }else{
-                    AwardedDTO awardedDTOValidMax = filterAwarded(awardedDTOListMaxes, prod.getName());
-                    AwardedDTO awardedDTOValidMin = filterAwarded(awardedDTOListMin, prod.getName());
-
-                    if(retOld.getFollowingWin() == 0){
-                        retOld.setFollowingWin(ind.getYear());
-                        retOld.setInterval(retOld.getFollowingWin() - retOld.getPreviousWin());
-
-                        awardedDTOValidMax.setInterval(retOld.getInterval());
-                        awardedDTOValidMax.setFollowingWin(retOld.getFollowingWin());
-                        awardedDTOValidMin.setInterval(retOld.getInterval());
-                        awardedDTOValidMin.setFollowingWin(retOld.getFollowingWin());
-                    }else{
-                        Integer newInterval = ind.getYear() - retOld.getFollowingWin();
-
-                        if(awardedDTOValidMax.getInterval() < newInterval){
-                            awardedDTOValidMax.setFollowingWin(ind.getYear());
-                            awardedDTOValidMax.setPreviousWin(retOld.getFollowingWin());
-                            awardedDTOValidMax.setInterval(newInterval);
-                        }
-
-                        if(awardedDTOValidMin.getInterval() > newInterval){
-                            awardedDTOValidMin.setFollowingWin(ind.getYear());
-                            awardedDTOValidMin.setPreviousWin(retOld.getFollowingWin());
-                            awardedDTOValidMin.setInterval(newInterval);
-                        }
-
-                        retOld.setPreviousWin(retOld.getFollowingWin());
-                        retOld.setFollowingWin(ind.getYear());
-                        retOld.setInterval(newInterval);
-                    }
-                }
-            });
-        });
-
-        awardedDTOListMaxes.forEach(max->{
-            if(max.getFollowingWin() == 0){
-                max.setFollowingWin(max.getPreviousWin());
-            }
-            if(max.getInterval() == 0){
-                max.setInterval(1);
-            }
-        });
-
-        awardedDTOListMin.forEach(min->{
-            if(min.getFollowingWin() == 0){
-                min.setFollowingWin(min.getPreviousWin());
-            }
-        });
-
-        return genereteAwardsBreak(awardedDTOListMaxes, awardedDTOListMin);
+        return getAwardsBreak(getIndicatorWin());
     }
 
-    private AwardsBreakDTO genereteAwardsBreak(List<AwardedDTO> awardedDTOListMaxes, List<AwardedDTO> awardedDTOListMin){
+    @Override
+    public AwardsBreakDTO getAwardsBreak(List<Indicated> indicated) {
         AwardsBreakDTO awardsBreakDTO = new AwardsBreakDTO(new ArrayList<>(),new ArrayList<>());
+        List<AwardedDTO> awardedDTOList = getAwardsList(indicated);
 
-        if(awardedDTOListMaxes != null && awardedDTOListMaxes.size() > 0){
-            Collections.sort(awardedDTOListMaxes);
+        if(awardedDTOList != null && awardedDTOList.size() > 0){
+            Collections.sort(awardedDTOList);
+
             ArrayList<AwardedDTO> listMax  = new ArrayList<>();
-            for (int i = 0; i < awardedDTOListMaxes.size(); i++) {
-                if(listMax.size() > 0){
-                    if(listMax.get(0).getInterval() != awardedDTOListMaxes.get(i).getInterval()){
-                        break;
-                    }else{
-                        listMax.add(awardedDTOListMaxes.get(i));
-                    }
-                }else{
-                    listMax.add(awardedDTOListMaxes.get(i));
+            for (int i = 0; i < awardedDTOList.size(); i++) {
+                if(validationAward(listMax, awardedDTOList.get(i))){
+                    break;
                 }
             }
             awardsBreakDTO.setMax(listMax);
-        }
 
-        if(awardedDTOListMaxes != null && awardedDTOListMaxes.size() > 0){
-            Collections.sort(awardedDTOListMin);
             ArrayList<AwardedDTO> listMin  = new ArrayList<>();
-            for (int i = awardedDTOListMin.size()-1; i >= 0 ; i--) {
-                if(listMin.size() > 0){
-                    if(listMin.get(0).getInterval() != awardedDTOListMin.get(i).getInterval()){
-                        break;
-                    }else{
-                        listMin.add(awardedDTOListMin.get(i));
-                    }
-                }else{
-                    listMin.add(awardedDTOListMin.get(i));
+            for (int i = awardedDTOList.size()-1; i >= 0 ; i--) {
+                if(validationAward(listMin, awardedDTOList.get(i))){
+                    break;
                 }
             }
             awardsBreakDTO.setMin(listMin);
+
         }
 
         return awardsBreakDTO;
     }
 
-    private AwardedDTO filterAwarded(List<AwardedDTO> list, String name){
-        List<AwardedDTO> retOldList = list.stream().filter(aw -> aw.getProducer() == name)
-                .collect(Collectors.toList());
-        AwardedDTO retOld = null;
-        if(retOldList != null && retOldList.size() > 0){
-            retOld = retOldList.get(0);
+    public boolean validationAward(ArrayList<AwardedDTO> list, AwardedDTO validation){
+        if(list.size() > 0){
+            if(list.get(0).getInterval() != validation.getInterval()){
+                return true;
+            }else{
+                list.add(validation);
+            }
+        }else{
+            list.add(validation);
         }
-        return retOld;
+        return false;
+    }
+
+    public List<AwardedDTO> getAwardsList(List<Indicated> indicated) {
+        List<AwardedDTO> awardedDTOList = new ArrayList<>();
+
+        if(indicated !=null){
+            Map<String, AwardedDTO> awardedLastDataMap = new HashMap<>();
+
+            indicated.forEach(ind->{
+                ind.getProducer().forEach(producer->{
+                    AwardedDTO oldData = awardedLastDataMap.get(producer.getName());
+                    if(oldData == null){
+                        oldData = new AwardedDTO(producer.getName(), 0, ind.getYear(), 0);
+                        awardedLastDataMap.put(producer.getName(), oldData);
+                    }else{
+                        if(oldData.getFollowingWin() == 0) {
+                            oldData.setFollowingWin(ind.getYear());
+                            oldData.setInterval(oldData.getFollowingWin() - oldData.getPreviousWin());
+                        }else {
+                            Integer newInterval = ind.getYear() - oldData.getFollowingWin();
+                            oldData.setPreviousWin(oldData.getFollowingWin());
+                            oldData.setFollowingWin(ind.getYear());
+                            oldData.setInterval(newInterval);
+                        }
+                        awardedLastDataMap.put(producer.getName(), oldData);
+                        awardedDTOList.add(new AwardedDTO(
+                                oldData.getProducer(),
+                                oldData.getInterval(),
+                                oldData.getPreviousWin(),
+                                oldData.getFollowingWin())
+                        );
+                    }
+                });
+            });
+        }
+
+        return awardedDTOList;
     }
 
     private List<Indicated> getIndicatorWin(){
